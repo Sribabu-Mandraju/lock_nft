@@ -1,0 +1,76 @@
+# === Dependencies ===
+node_modules/
+**/node_modules/
+.pnp
+.pnp.js
+
+# === Environment ===
+.env
+.env.local
+.env.*.local
+.secrets
+.envrc
+
+# === Build/Output ===
+dist/
+build/
+artifacts/
+cache/
+typechain/
+out/
+coverage/
+.parcel-cache/
+
+# === Testing ===
+.nyc_output/
+test-results/
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+*.code-workspace
+
+# === OS Generated ===
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini
+# === Hardhat ===
+.hardhat/
+.history/
+gas_reports.txt
+
+# === Foundry ===
+forge-artifacts/
+out/
+cache/
+
+# === Logs ===
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.env
+
+
+# === ABI Files (uncomment if needed) ===
+# !/abis/*.json  # Keep ABIs but ignore others in folder
+# /abis/*.bin
+# /abis/*.abi
+
+# === Misc ===
+*.bak
+*.tmp
+*.temp
+*~
+~$*
+
+.env
