@@ -1,165 +1,389 @@
-import LockTimeNFTAbi from '../abis/LockTimeNFTabi.json' with { type: 'json' };
-import { createWalletClient, createPublicClient, http } from 'viem';
-import { base, baseSepolia } from 'viem/chains';
-import dotenv from 'dotenv';
+import {
+  publicClient,
+  LockNFT_getContractInstance,
+} from "../config/contract.config.js";
 
-dotenv.config();
+const contract = LockNFT_getContractInstance();
 
-// Configure clients
-export const walletClient = createWalletClient({
-  chain: baseSepolia,
-  transport: http(process.env.RPC_URL)
-});
+/**
+ * Fetch deposit details for a given NFT
+ * @param tokenId - The NFT token ID to query
+ */
+export const getDeposit = async (req, res) => {
+  try {
+    const { tokenId } = req.query;
+    if (!Number.isInteger(Number(tokenId)) || Number(tokenId) <= 0) {
+      return res.status(400).json({ error: "Invalid token ID" });
+    }
 
-export const publicClient = createPublicClient({
-  chain: baseSepolia,
-  transport: http(process.env.RPC_URL)
-});
+    const [
+      amount,
+      startTs,
+      period,
+      unlockTs,
+      original,
+    ] = await publicClient.readContract({
+      ...contract,
+      functionName: "getDeposit",
+      args: [BigInt(tokenId)],
+    });
 
-// Contract instance
-export const LockNFT_getContractInstance = () => {
-  return {
-    address: process.env.LOCK_NFT_ADDR,
-    abi: LockTimeNFTAbi
-  };
+    res.status(200).json({
+      amount: amount.toString(),
+      startTimestamp: startTs.toString(),
+      periodMonths: Number(period),
+      unlockTimestamp: unlockTs.toString(),
+      originalMinter: original,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to fetch deposit", details: error.message });
+  }
 };
 
-// ========== CONFIG FUNCTIONS (OWNER ONLY) ==========
+/**
+ * Fetch token URI for a given NFT
+ * @param tokenId - The NFT token ID to query
+ */
+export const getTokenURI = async (req, res) => {
+  try {
+    const { tokenId } = req.query;
+    if (!Number.isInteger(Number(tokenId)) || Number(tokenId) <= 0) {
+      return res.status(400).json({ error: "Invalid token ID" });
+    }
 
-export const setUSDT = async (usdtAddress, account) => {
-  const contract = LockNFT_getContractInstance();
-  const { request } = await publicClient.simulateContract({
-    ...contract,
-    functionName: 'setUSDT',
-    args: [usdtAddress],
-    account
-  });
-  return walletClient.writeContract(request);
+    const uri = await publicClient.readContract({
+      ...contract,
+      functionName: "tokenURI",
+      args: [BigInt(tokenId)],
+    });
+
+    res.status(200).json({ tokenURI: uri });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to fetch token URI", details: error.message });
+  }
 };
 
-export const setROIs = async (roi3m, roi6m, roi12m, account) => {
-  const contract = LockNFT_getContractInstance();
-  const { request } = await publicClient.simulateContract({
-    ...contract,
-    functionName: 'setROIs',
-    args: [roi3m, roi6m, roi12m],
-    account
-  });
-  return walletClient.writeContract(request);
+/**
+ * Get USDT address from contract
+ */
+export const getUsdcAddr = async (req, res) => {
+  try {
+    const address = await publicClient.readContract({
+      ...contract,
+      functionName: "usdt",
+    });
+    res.status(200).json({ usdc: address });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
-export const setBaseURI = async (baseURI, account) => {
-  const contract = LockNFT_getContractInstance();
-  const { request } = await publicClient.simulateContract({
-    ...contract,
-    functionName: 'setBaseURI',
-    args: [baseURI],
-    account
-  });
-  return walletClient.writeContract(request);
+/**
+ * Get current ROI values for all periods
+ */
+export const getROIs = async (req, res) => {
+  try {
+    const [roi3m, roi6m, roi12m] = await Promise.all([
+      publicClient.readContract({
+        ...contract,
+        functionName: "roi3m",
+      }),
+      publicClient.readContract({
+        ...contract,
+        functionName: "roi6m",
+      }),
+      publicClient.readContract({
+        ...contract,
+        functionName: "roi12m",
+      }),
+    ]);
+
+    res.status(200).json({
+      roi3m: roi3m.toString(),
+      roi6m: roi6m.toString(),
+      roi12m: roi12m.toString(),
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to fetch ROI values", details: error.message });
+  }
 };
 
-export const setContractURI = async (contractURI, account) => {
-  const contract = LockNFT_getContractInstance();
-  const { request } = await publicClient.simulateContract({
-    ...contract,
-    functionName: 'setContractURI',
-    args: [contractURI],
-    account
-  });
-  return walletClient.writeContract(request);
+/**
+ * Get contract URI
+ */
+export const getContractURI = async (req, res) => {
+  try {
+    const uri = await publicClient.readContract({
+      ...contract,
+      functionName: "contractURI",
+    });
+    res.status(200).json({ contractURI: uri });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to fetch contract URI", details: error.message });
+  }
 };
 
-// ========== STAKING FUNCTIONS ==========
-
-export const deposit = async (amount, periodMonths, account) => {
-  const contract = LockNFT_getContractInstance();
-  const { request } = await publicClient.simulateContract({
-    ...contract,
-    functionName: 'deposit',
-    args: [amount, periodMonths],
-    account
-  });
-  return walletClient.writeContract(request);
+/**
+ * Get base URI
+ */
+export const getBaseURI = async (req, res) => {
+  try {
+    const uri = await publicClient.readContract({
+      ...contract,
+      functionName: "_baseURI",
+    });
+    res.status(200).json({ baseURI: uri });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to fetch base URI", details: error.message });
+  }
 };
 
-export const redeem = async (tokenId, account) => {
-  const contract = LockNFT_getContractInstance();
-  const { request } = await publicClient.simulateContract({
-    ...contract,
-    functionName: 'redeem',
-    args: [tokenId],
-    account
-  });
-  return walletClient.writeContract(request);
+/**
+ * Get total supply of NFTs
+ */
+export const getTotalSupply = async (req, res) => {
+  try {
+    const totalSupply = await publicClient.readContract({
+      ...contract,
+      functionName: "totalSupply",
+    });
+    res.status(200).json({ totalSupply: totalSupply.toString() });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to fetch total supply", details: error.message });
+  }
 };
 
-// ========== VIEW FUNCTIONS ==========
+/**
+ * Get token by index
+ * @param index - The index to query
+ */
+export const getTokenByIndex = async (req, res) => {
+  try {
+    const { index } = req.query;
+    if (!Number.isInteger(Number(index)) || Number(index) < 0) {
+      return res.status(400).json({ error: "Invalid index" });
+    }
 
-export const getDeposit = async (tokenId) => {
-  const contract = LockNFT_getContractInstance();
-  return publicClient.readContract({
-    ...contract,
-    functionName: 'getDeposit',
-    args: [tokenId]
-  });
+    const tokenId = await publicClient.readContract({
+      ...contract,
+      functionName: "tokenByIndex",
+      args: [BigInt(index)],
+    });
+
+    res.status(200).json({ tokenId: tokenId.toString() });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to fetch token by index",
+      details: error.message,
+    });
+  }
 };
 
-export const tokenURI = async (tokenId) => {
-  const contract = LockNFT_getContractInstance();
-  return publicClient.readContract({
-    ...contract,
-    functionName: 'tokenURI',
-    args: [tokenId]
-  });
+/**
+ * Get tokens owned by an address
+ * @param address - The address to query
+ */
+export const getTokensOfOwner = async (req, res) => {
+  try {
+    const { address } = req.query;
+    if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
+      return res.status(400).json({ error: "Invalid address" });
+    }
+
+    const balance = await publicClient.readContract({
+      ...contract,
+      functionName: "balanceOf",
+      args: [address],
+    });
+
+    const tokens = [];
+    for (let i = 0; i < Number(balance); i++) {
+      const tokenId = await publicClient.readContract({
+        ...contract,
+        functionName: "tokenOfOwnerByIndex",
+        args: [address, BigInt(i)],
+      });
+      tokens.push(tokenId.toString());
+    }
+
+    res.status(200).json({ tokens });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to fetch tokens of owner",
+      details: error.message,
+    });
+  }
 };
 
-export const contractURI = async () => {
-  const contract = LockNFT_getContractInstance();
-  return publicClient.readContract({
-    ...contract,
-    functionName: 'contractURI'
-  });
+/**
+ * Get owner of a token
+ * @param tokenId - The token ID to query
+ */
+export const getTokenOwner = async (req, res) => {
+  try {
+    const { tokenId } = req.query;
+    if (!Number.isInteger(Number(tokenId)) || Number(tokenId) <= 0) {
+      return res.status(400).json({ error: "Invalid token ID" });
+    }
+
+    const owner = await publicClient.readContract({
+      ...contract,
+      functionName: "ownerOf",
+      args: [BigInt(tokenId)],
+    });
+
+    res.status(200).json({ owner });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to fetch token owner", details: error.message });
+  }
 };
 
-export const getCurrentROIs = async () => {
-  const contract = LockNFT_getContractInstance();
-  const [roi3m, roi6m, roi12m] = await Promise.all([
-    publicClient.readContract({ ...contract, functionName: 'roi3m' }),
-    publicClient.readContract({ ...contract, functionName: 'roi6m' }),
-    publicClient.readContract({ ...contract, functionName: 'roi12m' })
-  ]);
-  return { roi3m, roi6m, roi12m };
+/**
+ * Get contract owner
+ */
+export const getContractOwner = async (req, res) => {
+  try {
+    const owner = await publicClient.readContract({
+      ...contract,
+      functionName: "owner",
+    });
+    res.status(200).json({ owner });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to fetch contract owner",
+      details: error.message,
+    });
+  }
 };
 
-export const getUSDTAddress = async () => {
-  const contract = LockNFT_getContractInstance();
-  return publicClient.readContract({
-    ...contract,
-    functionName: 'usdt'
-  });
+// Placeholder for write functions that should be handled client-side
+export const deposit = async (req, res) => {
+  res
+    .status(400)
+    .json({ error: "Deposit must be handled client-side via smart contract." });
 };
 
-// ========== UTILITY FUNCTIONS ==========
-
-export const collectFees = async (account) => {
-  const contract = LockNFT_getContractInstance();
-  const { request } = await publicClient.simulateContract({
-    ...contract,
-    functionName: 'collectFeesNUCLEAR',
-    account
-  });
-  return walletClient.writeContract(request);
+export const setUSDT = async (req, res) => {
+  res
+    .status(400)
+    .json({ error: "setUSDT must be handled via secure admin script." });
 };
 
-// Helper to format deposit data
-export const formatDepositData = (depositResult) => {
-  const [amount, startTimestamp, periodMonths, unlockTimestamp, originalMinter] = depositResult;
-  return {
-    amount: amount.toString(),
-    startTimestamp: startTimestamp.toString(),
-    periodMonths: Number(periodMonths),
-    unlockTimestamp: unlockTimestamp.toString(),
-    originalMinter
-  };
+export const setROIs = async (req, res) => {
+  res
+    .status(400)
+    .json({ error: "setROIs must be handled via secure admin script." });
+};
+
+export const redeem = async (req, res) => {
+  res
+    .status(400)
+    .json({ error: "Redeem must be handled client-side via smart contract." });
+};
+
+export const collectFees = async (req, res) => {
+  res
+    .status(400)
+    .json({ error: "collectFees must be handled via secure admin script." });
+};
+
+export const connectWallet = async (req, res) => {
+  res
+    .status(400)
+    .json({ error: "Wallet connection must be handled client-side." });
+};
+
+/**
+ * Get all owned NFTs with their details for a given address
+ * @param address - The address to query
+ */
+export const getAllOwnedNFTs = async (req, res) => {
+  try {
+    const { address } = req.query;
+    if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
+      return res.status(400).json({ error: "Invalid address" });
+    }
+
+    // Get total balance of NFTs owned by the address
+    const balance = await publicClient.readContract({
+      ...contract,
+      functionName: "balanceOf",
+      args: [address],
+    });
+
+    const nfts = [];
+
+    // Iterate through all owned tokens
+    for (let i = 0; i < Number(balance); i++) {
+      // Get token ID at index i
+      const tokenId = await publicClient.readContract({
+        ...contract,
+        functionName: "tokenOfOwnerByIndex",
+        args: [address, BigInt(i)],
+      });
+
+      // Get deposit details for this token
+      const [
+        amount,
+        startTs,
+        period,
+        unlockTs,
+        original,
+      ] = await publicClient.readContract({
+        ...contract,
+        functionName: "getDeposit",
+        args: [tokenId],
+      });
+
+      // Get token URI
+      const tokenURI = await publicClient.readContract({
+        ...contract,
+        functionName: "tokenURI",
+        args: [tokenId],
+      });
+
+      nfts.push({
+        tokenId: tokenId.toString(),
+        deposit: {
+          amount: amount.toString(),
+          startTimestamp: startTs.toString(),
+          periodMonths: Number(period),
+          unlockTimestamp: unlockTs.toString(),
+          originalMinter: original,
+        },
+        tokenURI,
+        isLocked: BigInt(unlockTs) > BigInt(Math.floor(Date.now() / 1000)),
+        timeRemaining:
+          BigInt(unlockTs) > BigInt(Math.floor(Date.now() / 1000))
+            ? (
+                BigInt(unlockTs) - BigInt(Math.floor(Date.now() / 1000))
+              ).toString()
+            : "0",
+      });
+    }
+
+    res.status(200).json({
+      totalNFTs: Number(balance),
+      nfts,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to fetch owned NFTs",
+      details: error.message,
+    });
+  }
 };
