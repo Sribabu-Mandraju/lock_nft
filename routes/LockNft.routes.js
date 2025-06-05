@@ -29,7 +29,7 @@ const router = express.Router();
 // Read routes
 router.get("/deposit", getDeposit); // Get deposit info by token ID
 router.get("/token-uri", getTokenURI); // Get token URI by token ID
-router.get("/usdc", getUsdcAddr); // Get USDT contract address
+router.get("/usdt", getUsdcAddr); // Get USDT contract address
 router.get("/rois", getROIs); // Get current ROI values
 router.get("/contract-uri", getContractURI); // Get contract URI
 router.get("/base-uri", getBaseURI); // Get base URI
