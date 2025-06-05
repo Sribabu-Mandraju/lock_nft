@@ -79,7 +79,7 @@ export const getUsdcAddr = async (req, res) => {
       ...contract,
       functionName: "usdt",
     });
-    res.status(200).json({ usdc: address });
+    res.status(200).json({ usdt: address });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
