@@ -13,6 +13,7 @@ import {
   getTokenOwner,
   getContractOwner,
   getAllOwnedNFTs,
+  getCurrentNetwork,
 
   // Write functions (placeholders)
   connectWallet,
@@ -38,6 +39,7 @@ router.get("/tokens-of-owner", getTokensOfOwner); // Get tokens owned by address
 router.get("/token-owner", getTokenOwner); // Get owner of token
 router.get("/contract-owner", getContractOwner); // Get contract owner
 router.get("/owned-nfts", getAllOwnedNFTs); // Get all owned NFTs with details
+router.get("/network",getCurrentNetwork);
 
 // Write routes (placeholders)
 router.get("/connect", connectWallet); // Connect wallet (client-side)

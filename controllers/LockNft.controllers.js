@@ -3,6 +3,9 @@ import {
   LockNFT_getContractInstance,
 } from "../config/contract.config.js";
 
+import { currentNetwork } from "../config/contract.config.js";
+
+
 const contract = LockNFT_getContractInstance();
 
 /**
@@ -384,6 +387,29 @@ export const getAllOwnedNFTs = async (req, res) => {
     res.status(500).json({
       error: "Failed to fetch owned NFTs",
       details: error.message,
+    });
+  }
+};
+
+
+export const getCurrentNetwork = async (req, res) => {
+  try {
+    const network = currentNetwork;
+    
+    res.status(200).json({
+      id: network.id || Object.keys(NETWORKS).find(key => NETWORKS[key].name === network.name),
+      name: network.name,
+      chainId: network.chain.id,
+      rpcUrl: network.rpcUrl,
+      contractAddress: network.contractAddress,
+      nativeCurrency: network.chain.nativeCurrency,
+      blockExplorers: network.chain.blockExplorers ? 
+        Object.values(network.chain.blockExplorers).map(exp => exp.url) : []
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to fetch network information",
+      details: error.message
     });
   }
 };

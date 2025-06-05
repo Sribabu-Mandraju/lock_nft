@@ -1,4 +1,3 @@
-// src/config/contract.config.js
 import { createPublicClient, http } from 'viem';
 import {
   baseSepolia,
@@ -12,7 +11,7 @@ import {
 } from 'viem/chains';
 import LockNftAbi from '../abis/LockTimeNftAbi.json' with { type: 'json' };
 
-// Network configurations
+// Network configurations with specific environment variables for each
 const NETWORKS = {
   baseSepolia: {
     chain: baseSepolia,
@@ -20,16 +19,16 @@ const NETWORKS = {
     contractAddress: process.env.LOCK_NFT_ADDR_BASE_SEPOLIA,
     name: 'Base Sepolia',
   },
-  base: {
-    chain: base,
-    rpcUrl: process.env.BASE_RPC || 'https://mainnet.base.org',
-    contractAddress: process.env.LOCK_NFT_ADDR_BASE,
-    name: 'Base',
-  },
+base: {
+  chain: base,
+  rpcUrl: process.env.BASE_RPC || 'https://mainnet.base.org',
+  contractAddress: process.env.LOCK_NFT_ADDR_BASE,
+  name: 'Base',
+},
   mainnet: {
     chain: mainnet,
     rpcUrl: process.env.ETH_RPC || 'https://eth.llamarpc.com',
-    contractAddress: process.env.LOCK_NFT_ADDR_ETH,
+    contractAddress: process.env.LOCK_NFT_ADDR_MAINNET,
     name: 'Ethereum',
   },
   sepolia: {
@@ -70,31 +69,66 @@ const getCurrentNetwork = () => {
   return NETWORKS[networkId] || NETWORKS.baseSepolia;
 };
 
-// Create public client instance
+// Create public client instance with proper error handling
 const createClient = () => {
-  const network = getCurrentNetwork();
-  return createPublicClient({
-    chain: network.chain,
-    transport: http(network.rpcUrl),
-  });
+  try {
+    const network = getCurrentNetwork();
+    if (!network.rpcUrl) {
+      throw new Error(`RPC URL not configured for ${network.name}`);
+    }
+    return createPublicClient({
+      chain: network.chain,
+      transport: http(network.rpcUrl),
+    });
+  } catch (error) {
+    console.error('Error creating public client:', error);
+    throw error;
+  }
 };
 
 // Instantiate the client
 const publicClientInstance = createClient();
 
-// Get contract instance for the current network
+// Get contract instance with proper validation
 export const LockNFT_getContractInstance = () => {
   const network = getCurrentNetwork();
+  
   if (!network.contractAddress) {
-    throw new Error(`Contract address not set for ${network.name}. Please set the appropriate LOCK_NFT_ADDR_* environment variable.`);
+    throw new Error(
+      `Contract address not set for ${network.name}. ` +
+      `Please set the LOCK_NFT_ADDR_${network.id.toUpperCase()} environment variable.`
+    );
   }
+
+  if (!LockNftAbi || LockNftAbi.length === 0) {
+    throw new Error('Contract ABI is not loaded or is empty');
+  }
+
   return {
     address: network.contractAddress,
     abi: LockNftAbi,
   };
 };
 
-// Get all supported networks
+// Enhanced public client with error handling
+export const publicClient = {
+  ...publicClientInstance,
+  readContract: async (params) => {
+    try {
+      return await publicClientInstance.readContract(params);
+    } catch (error) {
+      console.error('Contract read error:', {
+        address: params.address,
+        functionName: params.functionName,
+        args: params.args,
+        error: error.message
+      });
+      throw error;
+    }
+  }
+};
+
+// Export other utilities
 export const getSupportedNetworks = () => {
   return Object.entries(NETWORKS).map(([id, network]) => ({
     id,
@@ -105,25 +139,18 @@ export const getSupportedNetworks = () => {
   }));
 };
 
-// Get network by chain ID
 export const getNetworkByChainId = (chainId) => {
   return Object.values(NETWORKS).find(
     (network) => network.chain.id === chainId
   );
 };
 
-// Get network by ID
 export const getNetworkById = (networkId) => {
   return NETWORKS[networkId];
 };
 
-// Export current network info
 export const currentNetwork = getCurrentNetwork();
 
-// Export the instantiated client
-export { publicClientInstance as publicClient };
-
-// Also export the creation function for flexibility
 export const createPublicClientForNetwork = (networkId) => {
   const network = NETWORKS[networkId] || getCurrentNetwork();
   return createPublicClient({
