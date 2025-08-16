@@ -163,23 +163,23 @@ export const getStakingAdminData = async (req, res) => {
     }
 
     // Fetch deposit details for all NFTs
-    const deposits = [];
-    for (let tokenId = 1; tokenId <= tokenIdCounter; tokenId++) {
-      try {
-        const deposit = await TimeLockNFTStaking_contract.getDeposit(tokenId);
-        deposits.push({
-          tokenId,
-          depositToken: deposit.depositToken,
-          amount: deposit.amount.toString(),
-          startTimestamp: deposit.startTimestamp.toString(),
-          periodMonths: deposit.periodMonths.toString(),
-          unlockTimestamp: deposit.unlockTimestamp.toString(),
-          originalMinter: deposit.originalMinter,
-        });
-      } catch (error) {
-        continue;
-      }
-    }
+    // const deposits = [];
+    // for (let tokenId = 1; tokenId <= tokenIdCounter; tokenId++) {
+    //   try {
+    //     const deposit = await TimeLockNFTStaking_contract.getDeposit(tokenId);
+    //     deposits.push({
+    //       tokenId,
+    //       depositToken: deposit.depositToken,
+    //       amount: deposit.amount.toString(),
+    //       startTimestamp: deposit.startTimestamp.toString(),
+    //       periodMonths: deposit.periodMonths.toString(),
+    //       unlockTimestamp: deposit.unlockTimestamp.toString(),
+    //       originalMinter: deposit.originalMinter,
+    //     });
+    //   } catch (error) {
+    //     continue;
+    //   }
+    // }
 
     // Fetch depositedTokenBalance for each allowed token
     const depositedBalances = await Promise.all(
@@ -196,7 +196,7 @@ export const getStakingAdminData = async (req, res) => {
       success: true,
       owner,
       totalNFTsMinted: tokenIdCounter.toString(),
-      deposits,
+      // deposits,
       depositedBalances,
       allowedTokens,
     });
