@@ -320,4 +320,4 @@ export const getTokenMetadata = async (req, res) => {
       error: error.message,
     });
   }
-};
+};  
