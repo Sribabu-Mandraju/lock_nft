@@ -11,7 +11,7 @@ const TimeLockNFTStaking_contract = new ethers.Contract(
   TimeLockNFTStaking_ABI,
   provider
 );
-
+  
 export const getStakingPublicData = async (req, res) => {
   try {
     // Fetch ROI rates and contract URI
