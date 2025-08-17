@@ -4,7 +4,7 @@ import ERC20_ABI from '../abis/ERC20_ABI.json' with { type: 'json' };
 
 
 const provider = new ethers.JsonRpcProvider('https://sepolia.base.org');
-const TimeLockNFTStaking_contractAddress = '0x011b1D37121B292869A1ea9b3eB32bbD67B9F016'; // Replace with your deployed contract address
+const TimeLockNFTStaking_contractAddress = '0x27f3e17C1007Cbd7961042Aaea756A2c12726593'; // Replace with your deployed contract address
 
 const TimeLockNFTStaking_contract = new ethers.Contract(
   TimeLockNFTStaking_contractAddress,
@@ -162,24 +162,31 @@ export const getStakingAdminData = async (req, res) => {
       console.warn('Failed to fetch allowedTokens:', error.message);
     }
 
-    // Fetch deposit details for all NFTs
-    // const deposits = [];
-    // for (let tokenId = 1; tokenId <= tokenIdCounter; tokenId++) {
-    //   try {
-    //     const deposit = await TimeLockNFTStaking_contract.getDeposit(tokenId);
-    //     deposits.push({
-    //       tokenId,
-    //       depositToken: deposit.depositToken,
-    //       amount: deposit.amount.toString(),
-    //       startTimestamp: deposit.startTimestamp.toString(),
-    //       periodMonths: deposit.periodMonths.toString(),
-    //       unlockTimestamp: deposit.unlockTimestamp.toString(),
-    //       originalMinter: deposit.originalMinter,
-    //     });
-    //   } catch (error) {
-    //     continue;
-    //   }
-    // }
+
+    const allowedTokensWithNames = await Promise.all(
+      allowedTokens.map(async (tokenAddress) => {
+        try {
+          const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+          const tokenName = await tokenContract.name();
+          const decimals = await tokenContract.decimals();
+          return {
+            address: tokenAddress,
+            name: tokenName,
+            decimals: decimals.toString(),
+            maxCap:await TimeLockNFTStaking_contract.allowedTokens(tokenAddress),
+          };
+        } catch (error) {
+          console.warn(`Failed to fetch name for token ${tokenAddress}:`, error.message);
+          return {
+            address: tokenAddress,
+            name: 'Unknown', // Fallback name if fetching fails
+            decimals:"18",
+            maxCap:0,
+          };
+        }
+      })
+    );
+
 
     // Fetch depositedTokenBalance for each allowed token
     const depositedBalances = await Promise.all(
@@ -198,7 +205,7 @@ export const getStakingAdminData = async (req, res) => {
       totalNFTsMinted: tokenIdCounter.toString(),
       // deposits,
       depositedBalances,
-      allowedTokens,
+      allowedTokensWithNames,
     });
   } catch (error) {
     console.error('getStakingAdminData error:', error);
