@@ -166,6 +166,7 @@ export const getStakingAdminData = async (req, res) => {
     const allowedTokensWithNames = await Promise.all(
       allowedTokens.map(async (tokenAddress) => {
         try {
+          // const tokenMaxCap = await TimeLockNFTStaking_contract.allowedTokens(tokenAddress).toString();
           const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
           const tokenName = await tokenContract.name();
           const decimals = await tokenContract.decimals();
@@ -173,7 +174,7 @@ export const getStakingAdminData = async (req, res) => {
             address: tokenAddress,
             name: tokenName,
             decimals: decimals.toString(),
-            maxCap:await TimeLockNFTStaking_contract.allowedTokens(tokenAddress),
+            // maxCap:tokenMaxCap
           };
         } catch (error) {
           console.warn(`Failed to fetch name for token ${tokenAddress}:`, error.message);
