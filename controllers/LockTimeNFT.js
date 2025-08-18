@@ -45,9 +45,11 @@ export const getStakingPublicData = async (req, res) => {
         try {
           const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
           const tokenName = await tokenContract.name();
+          const decimals = await tokenContract.decimals();
           return {
             address: tokenAddress,
             name: tokenName,
+            decimals: decimals.toString(),
           };
         } catch (error) {
           console.warn(`Failed to fetch name for token ${tokenAddress}:`, error.message);
@@ -244,14 +246,25 @@ export const getUserDeposits = async (req, res) => {
         const tokenId = await TimeLockNFTStaking_contract.tokenOfOwnerByIndex(userWalletAddress, i);
         // Get deposit details
         const deposit = await TimeLockNFTStaking_contract.getDeposit(tokenId);
-        // Get token name from ERC20 contract
-        const tokenContract = new ethers.Contract(deposit.depositToken, ERC20_ABI, provider);
-        const tokenName = await tokenContract.name();
+        // Get token metadata from ERC20 contract
+        let tokenName = 'Unknown';
+        let tokenSymbol = '';
+        let decimals = 18;
+        try {
+          const tokenContract = new ethers.Contract(deposit.depositToken, ERC20_ABI, provider);
+          try { tokenName = await tokenContract.name(); } catch {}
+          try { tokenSymbol = await tokenContract.symbol(); } catch {}
+          try { decimals = Number(await tokenContract.decimals()); } catch {}
+        } catch (metaErr) {
+          console.warn(`Failed to init ERC20 for ${deposit.depositToken}:`, metaErr.message);
+        }
 
         deposits.push({
           tokenId: tokenId.toString(),
           depositToken: deposit.depositToken,
           tokenName,
+          tokenSymbol,
+          decimals,
           amount: deposit.amount.toString(),
           startTimestamp: deposit.startTimestamp.toString(),
           periodMonths: deposit.periodMonths.toString(),
