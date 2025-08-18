@@ -166,23 +166,24 @@ export const getStakingAdminData = async (req, res) => {
     const allowedTokensWithNames = await Promise.all(
       allowedTokens.map(async (tokenAddress) => {
         try {
-          // const tokenMaxCap = await TimeLockNFTStaking_contract.allowedTokens(tokenAddress).toString();
           const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
           const tokenName = await tokenContract.name();
           const decimals = await tokenContract.decimals();
+          // Fix: Access the public mapping directly - this is how Solidity public mappings work
+          const maxCap = await TimeLockNFTStaking_contract.isAllowedToken(tokenAddress);
           return {
             address: tokenAddress,
             name: tokenName,
             decimals: decimals.toString(),
-            // maxCap:tokenMaxCap
+            maxCap: maxCap.toString(),
           };
         } catch (error) {
-          console.warn(`Failed to fetch name for token ${tokenAddress}:`, error.message);
+          console.warn(`Failed to fetch data for token ${tokenAddress}:`, error.message);
           return {
             address: tokenAddress,
-            name: 'Unknown', // Fallback name if fetching fails
-            decimals:"18",
-            maxCap:0,
+            name: 'Unknown',
+            decimals: "18",
+            maxCap: "0",
           };
         }
       })
