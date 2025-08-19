@@ -4,7 +4,7 @@ import ERC20_ABI from '../abis/ERC20_ABI.json' with { type: 'json' };
 
 
 const provider = new ethers.JsonRpcProvider('https://base-mainnet.g.alchemy.com/v2/1kKjc1l5XNcYUfnpMkIht');
-const TimeLockNFTStaking_contractAddress = '0x3f1B78Ac9121252652f4e27CeE96acAD097d060c'; // Replace with your deployed contract address
+const TimeLockNFTStaking_contractAddress = '0xC7Ac55fF5C832fDc8572C5F0C6E203BB329Af35B'; // Replace with your deployed contract address
 
 const TimeLockNFTStaking_contract = new ethers.Contract(
   TimeLockNFTStaking_contractAddress,

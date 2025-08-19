@@ -59,7 +59,7 @@ const createContractInstance = async () => {
   try {
     console.log('Creating fresh contract instance...');
     const provider = new ethers.JsonRpcProvider('https://base-sepolia.g.alchemy.com/v2/GQXyK5v1cXTXl5Ub0idAE');
-    const contractAddress = '0x3f1B78Ac9121252652f4e27CeE96acAD097d060c';
+    const contractAddress = '0xC7Ac55fF5C832fDc8572C5F0C6E203BB329Af35B';
     
     // Test provider connection first
     try {
@@ -208,7 +208,7 @@ export const healthCheck = async (req, res) => {
     try {
       // Try to get the contract address to verify it's accessible
       const contractAddress = await TimeLockNFTStaking_contract.getAddress();
-      contractHealthy = contractAddress.toLowerCase() === '0x3f1B78Ac9121252652f4e27CeE96acAD097d060c'.toLowerCase();
+      contractHealthy = contractAddress.toLowerCase() === '0xC7Ac55fF5C832fDc8572C5F0C6E203BB329Af35B'.toLowerCase();
     } catch (error) {
       console.error('Contract health check failed:', error);
     }
@@ -223,7 +223,7 @@ export const healthCheck = async (req, res) => {
       },
       contract: {
         healthy: contractHealthy,
-        address: '0x3f1B78Ac9121252652f4e27CeE96acAD097d060c'
+        address: '0xC7Ac55fF5C832fDc8572C5F0C6E203BB329Af35B'
       },
       timestamp: new Date().toISOString()
     });
