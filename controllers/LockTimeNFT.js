@@ -3,8 +3,8 @@ import TimeLockNFTStaking_ABI from '../abis/LockTimeNFT_ABI.json' with { type: '
 import ERC20_ABI from '../abis/ERC20_ABI.json' with { type: 'json' };
 
 
-const provider = new ethers.JsonRpcProvider('https://sepolia.base.org');
-const TimeLockNFTStaking_contractAddress = '0x27f3e17C1007Cbd7961042Aaea756A2c12726593'; // Replace with your deployed contract address
+const provider = new ethers.JsonRpcProvider('https://base-mainnet.g.alchemy.com/v2/1kKjc1l5XNcYUfnpMkIht');
+const TimeLockNFTStaking_contractAddress = '0x3f1B78Ac9121252652f4e27CeE96acAD097d060c'; // Replace with your deployed contract address
 
 const TimeLockNFTStaking_contract = new ethers.Contract(
   TimeLockNFTStaking_contractAddress,

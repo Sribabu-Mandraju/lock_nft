@@ -15,7 +15,7 @@ import LockNftAbi from '../abis/LockTimeNftAbi.json' with { type: 'json' };
 const NETWORKS = {
   baseSepolia: {
     chain: baseSepolia,
-    rpcUrl: process.env.BASE_SEPOLIA_RPC || 'https://sepolia.base.org',
+    rpcUrl: process.env.BASE_SEPOLIA_RPC || 'https://base-mainnet.g.alchemy.com/v2/1kKjc1l5XNcYUfnpMkIht',
     contractAddress: process.env.LOCK_NFT_ADDR_BASE_SEPOLIA,
     name: 'Base Sepolia',
   },
