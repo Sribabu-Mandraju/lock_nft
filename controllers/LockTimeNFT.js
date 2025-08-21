@@ -3,7 +3,7 @@ import TimeLockNFTStaking_ABI from '../abis/LockTimeNFT_ABI.json' with { type: '
 import ERC20_ABI from '../abis/ERC20_ABI.json' with { type: 'json' };
 
 
-const provider = new ethers.JsonRpcProvider('https://base-mainnet.g.alchemy.com/v2/1kKjc1l5XNcYUfnpMkIht');
+const provider = new ethers.JsonRpcProvider('https://base-mainnet.g.alchemy.com/v2/lzIxPpJ8bHtK938K6Bnet');
 const TimeLockNFTStaking_contractAddress = '0xC7Ac55fF5C832fDc8572C5F0C6E203BB329Af35B'; // Replace with your deployed contract address
 
 const TimeLockNFTStaking_contract = new ethers.Contract(
@@ -45,11 +45,9 @@ export const getStakingPublicData = async (req, res) => {
         try {
           const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
           const tokenName = await tokenContract.name();
-          const decimals = await tokenContract.decimals();
           return {
             address: tokenAddress,
             name: tokenName,
-            decimals: decimals.toString(),
           };
         } catch (error) {
           console.warn(`Failed to fetch name for token ${tokenAddress}:`, error.message);
@@ -168,24 +166,23 @@ export const getStakingAdminData = async (req, res) => {
     const allowedTokensWithNames = await Promise.all(
       allowedTokens.map(async (tokenAddress) => {
         try {
+          // const tokenMaxCap = await TimeLockNFTStaking_contract.allowedTokens(tokenAddress).toString();
           const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
           const tokenName = await tokenContract.name();
           const decimals = await tokenContract.decimals();
-          // Fix: Access the public mapping directly - this is how Solidity public mappings work
-          const maxCap = await TimeLockNFTStaking_contract.isAllowedToken(tokenAddress);
           return {
             address: tokenAddress,
             name: tokenName,
             decimals: decimals.toString(),
-            maxCap: maxCap.toString(),
+            // maxCap:tokenMaxCap
           };
         } catch (error) {
-          console.warn(`Failed to fetch data for token ${tokenAddress}:`, error.message);
+          console.warn(`Failed to fetch name for token ${tokenAddress}:`, error.message);
           return {
             address: tokenAddress,
-            name: 'Unknown',
-            decimals: "18",
-            maxCap: "0",
+            name: 'Unknown', // Fallback name if fetching fails
+            decimals:"18",
+            maxCap:0,
           };
         }
       })
@@ -246,25 +243,14 @@ export const getUserDeposits = async (req, res) => {
         const tokenId = await TimeLockNFTStaking_contract.tokenOfOwnerByIndex(userWalletAddress, i);
         // Get deposit details
         const deposit = await TimeLockNFTStaking_contract.getDeposit(tokenId);
-        // Get token metadata from ERC20 contract
-        let tokenName = 'Unknown';
-        let tokenSymbol = '';
-        let decimals = 18;
-        try {
-          const tokenContract = new ethers.Contract(deposit.depositToken, ERC20_ABI, provider);
-          try { tokenName = await tokenContract.name(); } catch {}
-          try { tokenSymbol = await tokenContract.symbol(); } catch {}
-          try { decimals = Number(await tokenContract.decimals()); } catch {}
-        } catch (metaErr) {
-          console.warn(`Failed to init ERC20 for ${deposit.depositToken}:`, metaErr.message);
-        }
+        // Get token name from ERC20 contract
+        const tokenContract = new ethers.Contract(deposit.depositToken, ERC20_ABI, provider);
+        const tokenName = await tokenContract.name();
 
         deposits.push({
           tokenId: tokenId.toString(),
           depositToken: deposit.depositToken,
           tokenName,
-          tokenSymbol,
-          decimals,
           amount: deposit.amount.toString(),
           startTimestamp: deposit.startTimestamp.toString(),
           periodMonths: deposit.periodMonths.toString(),
@@ -292,6 +278,138 @@ export const getUserDeposits = async (req, res) => {
 };
 
 
+
+// Get ALL deposits across the collection (not a specific user)
+// Reverse order (latest tokenId first), paginated, skip missing deposits without error
+export const getAllDeposits = async (req, res) => {
+  try {
+    const { page = '1', limit = '20' } = req.query;
+
+    const pageNum = Math.max(parseInt(page), 1);
+    const limitNum = Math.min(Math.max(parseInt(limit), 1), 100);
+
+    // Get the latest minted tokenId (upper bound)
+    const latestIdBn = await TimeLockNFTStaking_contract._tokenIdCounter();
+    const latestId = Number(latestIdBn);
+
+    if (!Number.isFinite(latestId) || latestId <= 0) {
+      return res.status(200).json({
+        success: true,
+        deposits: [],
+        pagination: {
+          currentPage: pageNum,
+          limit: limitNum,
+          hasNextPage: false,
+          latestTokenId: '0',
+        }
+      });
+    }
+
+    // Compute the starting tokenId for this page (reverse order)
+    // Note: Because some tokenIds may be missing (redeemed), a page can have < limit items
+    const approxStartId = latestId - (pageNum - 1) * limitNum;
+    let cursorId = Math.min(Math.max(approxStartId, 1), latestId);
+
+    // Prefetch metadata for allowed tokens to save RPC calls
+    let allowedTokens = [];
+    try {
+      for (let i = 0; i < 200; i++) {
+        try {
+          const tokenAddress = await TimeLockNFTStaking_contract.allowedTokens(i);
+          allowedTokens.push(tokenAddress);
+        } catch (err) {
+          break; // out of bounds
+        }
+      }
+    } catch (err) {
+      // non-fatal
+    }
+
+    // Cache of token metadata keyed by lowercase address
+    const tokenMetaCache = new Map();
+    // Prime cache from allowed tokens
+    for (const tokenAddress of allowedTokens) {
+      const key = String(tokenAddress).toLowerCase();
+      if (tokenMetaCache.has(key)) continue;
+      try {
+        const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+        const [name, symbol] = await Promise.all([
+          tokenContract.name().catch(() => 'Unknown'),
+          tokenContract.symbol().catch(() => ''),
+        ]);
+        let decimals = 18;
+        try { decimals = Number(await tokenContract.decimals()); } catch {}
+        tokenMetaCache.set(key, { name, symbol, decimals });
+      } catch {
+        tokenMetaCache.set(key, { name: 'Unknown', symbol: '', decimals: 18 });
+      }
+    }
+
+    const deposits = [];
+
+    // Scan downward until we collect `limitNum` deposits or reach tokenId 1
+    while (cursorId >= 1 && deposits.length < limitNum) {
+      try {
+        const deposit = await TimeLockNFTStaking_contract.getDeposit(cursorId);
+
+        // Get token metadata from cache; lazily fetch once if not present
+        const tokenAddrKey = String(deposit.depositToken).toLowerCase();
+        let meta = tokenMetaCache.get(tokenAddrKey);
+        if (!meta) {
+          meta = { name: 'Unknown', symbol: '', decimals: 18 };
+          try {
+            const tokenContract = new ethers.Contract(deposit.depositToken, ERC20_ABI, provider);
+            const [name, symbol] = await Promise.all([
+              tokenContract.name().catch(() => 'Unknown'),
+              tokenContract.symbol().catch(() => ''),
+            ]);
+            let decimals = 18;
+            try { decimals = Number(await tokenContract.decimals()); } catch {}
+            meta = { name, symbol, decimals };
+          } catch {}
+          tokenMetaCache.set(tokenAddrKey, meta);
+        }
+
+        deposits.push({
+          tokenId: cursorId.toString(),
+          depositToken: deposit.depositToken,
+          tokenName: meta.name,
+          tokenSymbol: meta.symbol,
+          decimals: meta.decimals,
+          amount: deposit.amount.toString(),
+          startTimestamp: deposit.startTimestamp.toString(),
+          periodMonths: deposit.periodMonths.toString(),
+          unlockTimestamp: deposit.unlockTimestamp.toString(),
+          originalMinter: deposit.originalMinter,
+        });
+      } catch (error) {
+        // Missing/invalid deposit for this tokenId; skip without failing
+      } finally {
+        cursorId -= 1;
+      }
+    }
+
+    // Determine if there might be more pages
+    const hasNextPage = cursorId >= 1; // There are still lower tokenIds to scan
+
+    return res.status(200).json({
+      success: true,
+      deposits,
+      pagination: {
+        currentPage: pageNum,
+        limit: limitNum,
+        hasNextPage,
+        latestTokenId: latestIdBn.toString(),
+      }
+    });
+  } catch (error) {
+    console.error('getAllDeposits error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
 
 export const getTokenMetadata = async (req, res) => {
   try {
