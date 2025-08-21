@@ -43,11 +43,14 @@ export const getStakingPublicData = async (req, res) => {
     const allowedTokensWithNames = await Promise.all(
       allowedTokens.map(async (tokenAddress) => {
         try {
+          
           const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
           const tokenName = await tokenContract.name();
+          const decimals = await tokenContract.decimals();
           return {
             address: tokenAddress,
             name: tokenName,
+            decimals: decimals.toString(),
           };
         } catch (error) {
           console.warn(`Failed to fetch name for token ${tokenAddress}:`, error.message);
