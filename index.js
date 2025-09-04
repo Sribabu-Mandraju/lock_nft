@@ -47,7 +47,7 @@ app.get("/",async (req,res) => {
 
 // --- Blockchain websocket listeners ---
 const ALCHEMY_WS_URL = "wss://eth-sepolia.g.alchemy.com/v2/geIrP8FKOhyxLglmOQLfF";
-const STAKING_ADDRESS = process.env.STAKING_ADDRESS || "0x0bbDAD19d2883a4D03241a25793c2B6377CeD214";
+const STAKING_ADDRESS = process.env.STAKING_ADDRESS || "0xf4b4ea96572B0B9411Ba15A81db6d1dEC4199671";
 
 if (ALCHEMY_WS_URL) {
   const wsProvider = new ethers.WebSocketProvider(ALCHEMY_WS_URL);

@@ -22,7 +22,7 @@ const getProvider = () => {
 };
 
 // Create contracts for each provider
-const TimeLockNFTStaking_contractAddress = '0x0bbDAD19d2883a4D03241a25793c2B6377CeD214';
+const TimeLockNFTStaking_contractAddress = '0xf4b4ea96572B0B9411Ba15A81db6d1dEC4199671';
 const TimeLockNFTStaking_contracts = providers.map(provider => 
   new ethers.Contract(
     TimeLockNFTStaking_contractAddress,
