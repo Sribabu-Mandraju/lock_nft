@@ -7,8 +7,9 @@ import LockNftRoutes from "./routes/LockNft.routes.js"
 import LockTimeNFTRoutes from "./routes/LockTimeNFTRoutes.js"
 import userDepositRoutes from "./routes/userDepositRoutes.js"
 import LockTimeNFTRoutes_Halal from "./routes/Halal_TimeLockNFT_routes.js"
-import Deposit from "./models/Deposit.js"
+import QueueWithdrawalExpiry from "./models/QueueWithdrawalExpiry.js"
 import TimeLockNFTStaking_ABI from "./abis/LockTimeNFT_ABI_Halal.json" with { type: "json" }
+import Halal_Pool_Routes from "./routes/Halal_Pool_Routes.js"
 
 const app = express()
 const PORT = 3000
@@ -37,6 +38,7 @@ app.use("/market",LockNftRoutes)
 app.use("/lockTimeNFT",LockTimeNFTRoutes)
 app.use("/deposits", userDepositRoutes)
 app.use("/halal_lockTimeNFT", LockTimeNFTRoutes_Halal)
+app.use("/halal_pool", Halal_Pool_Routes)
 
 // Read from contract (GET)
 app.get("/",async (req,res) => {
@@ -46,52 +48,89 @@ app.get("/",async (req,res) => {
 })
 
 // --- Blockchain websocket listeners ---
-const ALCHEMY_WS_URL = "wss://eth-sepolia.g.alchemy.com/v2/geIrP8FKOhyxLglmOQLfF";
-const STAKING_ADDRESS = process.env.STAKING_ADDRESS || "0xf4b4ea96572B0B9411Ba15A81db6d1dEC4199671";
+const ALCHEMY_WS_URL = "wss://eth-mainnet.g.alchemy.com/v2/geIrP8FKOhyxLglmOQLfF";
+// USDT pool
+const USDT_MARKET_ADDRESS = "0xBe8b1f70c5C20fe240CfA7e55B434545398279F3";
+// USDC pool
+const USDC_MARKET_ADDRESS = "0x7e496C5678b1722289d9c4A13C9aa53631Ca7607";
 
 if (ALCHEMY_WS_URL) {
   const wsProvider = new ethers.WebSocketProvider(ALCHEMY_WS_URL);
-  const wsContract = new ethers.Contract(STAKING_ADDRESS, TimeLockNFTStaking_ABI, wsProvider);
+  const usdtContract = new ethers.Contract(USDT_MARKET_ADDRESS, TimeLockNFTStaking_ABI, wsProvider);
+  const usdcContract = new ethers.Contract(USDC_MARKET_ADDRESS, TimeLockNFTStaking_ABI, wsProvider);
 
   // Deposited(address user, uint256 tokenId, address depsoitToken, uint256 amount, uint8 months, uint256 depositedAt)
-  wsContract.on("Deposited", async (user, tokenId, depositToken, amount, months, depositedAt, event) => {
+
+
+  // WithdrawalQueued(uint256 indexed expiry, address indexed account, uint256 scaledAmount, uint256 normalizedAmount)
+  const handleWithdrawalQueued = (marketPool) => async (
+    expiry,
+    account,
+    scaledAmount,
+    normalizedAmount,
+    event
+  ) => {
     try {
-      console.log("[WS] Deposited event:", {
-        user: String(user),
-        tokenId: tokenId?.toString?.(),
-        depositToken: String(depositToken),
-        amount: amount?.toString?.(),
-        months: Number(months),
-        depositedAt: depositedAt?.toString?.(),
+      const key = {
+        expiry: expiry?.toString?.(),
+        account: String(account),
+      };
+
+      const update = {
+        scaledAmount: scaledAmount?.toString?.(),
+        normalizedAmount: normalizedAmount?.toString?.(),
+        market_pool: marketPool,
         txHash: event?.log?.transactionHash,
         blockNumber: event?.log?.blockNumber,
-      });
+      };
 
-      await Deposit.create({
-        user: String(user),
-        tokenId: tokenId.toString(),
-        token: String(depositToken),
-        amount: amount.toString(),
-        periodMonths: Number(months),
-        depositedAt: depositedAt.toString(),
-        txHash: event?.log?.transactionHash,
-        blockNumber: event?.log?.blockNumber,
-      });
-      console.log("[WS] Saved deposit:", tokenId.toString());
+      const saved = await QueueWithdrawalExpiry.findOneAndUpdate(
+        key,
+        { $set: update },
+        {
+          new: true,
+          upsert: true,
+          setDefaultsOnInsert: true,
+        }
+      );
+
+      console.log("[WS] WithdrawalQueued upserted:", saved?.id, key, marketPool);
     } catch (err) {
-      console.error("[WS] Save deposit failed:", err.message);
+      console.error("[WS] WithdrawalQueued upsert failed:", err.message);
     }
-  });
+  };
 
-  // Redeemed(address user, uint256 tokenId, address reedemToken, uint256 payout)
-  wsContract.on("Redeemed", async (user, tokenId) => {
+  usdtContract.on("WithdrawalQueued", handleWithdrawalQueued("usdt"));
+  usdcContract.on("WithdrawalQueued", handleWithdrawalQueued("usdc"));
+
+  // WithdrawalExecuted(uint256 indexed expiry, address indexed account, uint256 normalizedAmount)
+  const handleWithdrawalExecuted = (marketPool) => async (
+    expiry,
+    account,
+    _normalizedAmount,
+    event
+  ) => {
     try {
-      await Deposit.deleteOne({ tokenId: tokenId.toString() });
-      console.log("[WS] Removed redeemed token:", tokenId.toString());
+      const key = {
+        expiry: expiry?.toString?.(),
+        account: String(account),
+      };
+
+      const res = await QueueWithdrawalExpiry.deleteOne(key);
+      console.log(
+        "[WS] WithdrawalExecuted removed:",
+        key,
+        marketPool,
+        "deletedCount=",
+        res?.deletedCount
+      );
     } catch (err) {
-      console.error("[WS] Remove redeemed failed:", err.message);
+      console.error("[WS] WithdrawalExecuted delete failed:", err.message);
     }
-  });
+  };
+
+  usdtContract.on("WithdrawalExecuted", handleWithdrawalExecuted("usdt"));
+  usdcContract.on("WithdrawalExecuted", handleWithdrawalExecuted("usdc"));
 } else {
   console.warn("ALCHEMY_WS_URL not set; websocket listeners disabled.");
 }

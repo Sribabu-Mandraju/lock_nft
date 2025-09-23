@@ -1,13 +1,13 @@
 import { ethers } from 'ethers';
-import TimeLockNFTStaking_ABI from '../abis/LockTimeNFT_ABI_Halal.json' with { type: 'json' };
+import TimeLockNFTStaking_ABI from '../abis/Halal_Cash_ABI.json' with { type: 'json' };
 import ERC20_ABI from '../abis/ERC20_ABI.json' with { type: 'json' };
 import Deposit from '../models/Deposit.js';
 
 // Multiple RPC providers for load balancing
 const rpcUrls = [
-  "https://eth-sepolia.g.alchemy.com/v2/GQXyK5v1cXTXl5Ub0idAE",
-  "https://sepolia.infura.io/v3/810bf02706b94d81b0c81dc4870cea06",
-  "https://sepolia.infura.io/v3/dddfeddfe3a94c5a9ccd2fdddd135d9a"
+  "https://eth-mainnet.g.alchemy.com/v2/GQXyK5v1cXTXl5Ub0idAE",
+"https://mainnet.infura.io/v3/810bf02706b94d81b0c81dc4870cea06",
+"https://mainnet.infura.io/v3/dddfeddfe3a94c5a9ccd2fdddd135d9a",
 ];
 
 // Create providers for load balancing
