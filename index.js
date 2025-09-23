@@ -8,7 +8,7 @@ import LockTimeNFTRoutes from "./routes/LockTimeNFTRoutes.js"
 import userDepositRoutes from "./routes/userDepositRoutes.js"
 import LockTimeNFTRoutes_Halal from "./routes/Halal_TimeLockNFT_routes.js"
 import QueueWithdrawalExpiry from "./models/QueueWithdrawalExpiry.js"
-import TimeLockNFTStaking_ABI from "./abis/LockTimeNFT_ABI_Halal.json" with { type: "json" }
+import TimeLockNFTStaking_ABI from "./abis/Halal_Cash_ABI.json" with { type: "json" }
 import Halal_Pool_Routes from "./routes/Halal_Pool_Routes.js"
 
 const app = express()
