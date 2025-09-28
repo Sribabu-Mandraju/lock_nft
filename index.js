@@ -53,11 +53,14 @@ const ALCHEMY_WS_URL = "wss://eth-mainnet.g.alchemy.com/v2/geIrP8FKOhyxLglmOQLfF
 const USDT_MARKET_ADDRESS = "0xBe8b1f70c5C20fe240CfA7e55B434545398279F3";
 // USDC pool
 const USDC_MARKET_ADDRESS = "0x7e496C5678b1722289d9c4A13C9aa53631Ca7607";
+// USDT-Lockup pool
+const USDT_LOCKUP_MARKET_ADDRESS = "0x8c06d86596d671798a67e80dc44a281c8d822fd3"; // TODO: Replace with actual contract address
 
 if (ALCHEMY_WS_URL) {
   const wsProvider = new ethers.WebSocketProvider(ALCHEMY_WS_URL);
   const usdtContract = new ethers.Contract(USDT_MARKET_ADDRESS, TimeLockNFTStaking_ABI, wsProvider);
   const usdcContract = new ethers.Contract(USDC_MARKET_ADDRESS, TimeLockNFTStaking_ABI, wsProvider);
+  const usdtLockupContract = new ethers.Contract(USDT_LOCKUP_MARKET_ADDRESS, TimeLockNFTStaking_ABI, wsProvider);
 
   // Deposited(address user, uint256 tokenId, address depsoitToken, uint256 amount, uint8 months, uint256 depositedAt)
 
@@ -102,6 +105,7 @@ if (ALCHEMY_WS_URL) {
 
   usdtContract.on("WithdrawalQueued", handleWithdrawalQueued("usdt"));
   usdcContract.on("WithdrawalQueued", handleWithdrawalQueued("usdc"));
+  usdtLockupContract.on("WithdrawalQueued", handleWithdrawalQueued("usdt-lockup"));
 
   // WithdrawalExecuted(uint256 indexed expiry, address indexed account, uint256 normalizedAmount)
   const handleWithdrawalExecuted = (marketPool) => async (
@@ -131,6 +135,7 @@ if (ALCHEMY_WS_URL) {
 
   usdtContract.on("WithdrawalExecuted", handleWithdrawalExecuted("usdt"));
   usdcContract.on("WithdrawalExecuted", handleWithdrawalExecuted("usdc"));
+  usdtLockupContract.on("WithdrawalExecuted", handleWithdrawalExecuted("usdt-lockup"));
 } else {
   console.warn("ALCHEMY_WS_URL not set; websocket listeners disabled.");
 }
