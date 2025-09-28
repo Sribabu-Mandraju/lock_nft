@@ -6,7 +6,7 @@ const QueueWithdrawalExpirySchema = new mongoose.Schema(
     account: { type: String, index: true },
     scaledAmount: { type: String },
     normalizedAmount: { type: String },
-    market_pool: { type: String, enum: ["usdt", "usdc","usdt-lockup"], index: true },
+    market_pool: { type: String, enum: ["usdt", "usdc","usdt-nolockup"], index: true },
     txHash: { type: String },
     blockNumber: { type: Number },
   },

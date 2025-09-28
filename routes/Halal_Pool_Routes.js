@@ -1,12 +1,12 @@
 import express from "express";
-import { getWithdrawalQueuesByPool, getUsdtWithdrawalQueues, getUsdcWithdrawalQueues, getUsdtLockupWithdrawalQueues } from "../controllers/Hala_Pool_controllers.js";
+import { getWithdrawalQueuesByPool, getUsdtWithdrawalQueues, getUsdcWithdrawalQueues, getUsdtNolockupWithdrawalQueues } from "../controllers/Halal_Pool_controllers.js";
 
 const router = express.Router();
 
-// Use query parameters only: ?pool=usdt|usdc|usdt-lockup and optional ?account=0x...
+// Use query parameters only: ?pool=usdt|usdc|usdt-nolockup and optional ?account=0x...
 router.get("/queues", getWithdrawalQueuesByPool);
 router.get("/queues/usdt", getUsdtWithdrawalQueues);
 router.get("/queues/usdc", getUsdcWithdrawalQueues);
-router.get("/queues/usdt-lockup", getUsdtLockupWithdrawalQueues);
+router.get("/queues/usdt-nolockup", getUsdtNolockupWithdrawalQueues);
 
 export default router;

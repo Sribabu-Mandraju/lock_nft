@@ -3,7 +3,7 @@ import QueueWithdrawalExpiry from "../models/QueueWithdrawalExpiry.js";
 const normalizePool = (pool) => {
   if (!pool) return null;
   const p = String(pool).trim().toLowerCase();
-  if (p === "usdt" || p === "usdc" || p === "usdt-lockup") return p;
+  if (p === "usdt" || p === "usdc" || p === "usdt-nolockup") return p;
   return null;
 };
 
@@ -12,7 +12,7 @@ export const getWithdrawalQueuesByPool = async (req, res) => {
     // Accept only query parameters
     const pool = normalizePool(req.query?.pool);
     if (!pool) {
-      return res.status(400).json({ error: "Invalid or missing pool. Use 'usdt', 'usdc', or 'usdt-lockup'" });
+      return res.status(400).json({ error: "Invalid or missing pool. Use 'usdt', 'usdc', or 'usdt-nolockup'" });
     }
 
     const accountParam = req.query?.account;
@@ -43,8 +43,8 @@ export const getUsdcWithdrawalQueues = async (req, res) => {
   return getWithdrawalQueuesByPool(req, res);
 };
 
-export const getUsdtLockupWithdrawalQueues = async (req, res) => {
-  req.query = { ...(req.query || {}), pool: "usdt-lockup" };
+export const getUsdtNolockupWithdrawalQueues = async (req, res) => {
+  req.query = { ...(req.query || {}), pool: "usdt-nolockup" };
   return getWithdrawalQueuesByPool(req, res);
 };
 
@@ -52,7 +52,7 @@ export default {
   getWithdrawalQueuesByPool,
   getUsdtWithdrawalQueues,
   getUsdcWithdrawalQueues,
-  getUsdtLockupWithdrawalQueues,
+  getUsdtNolockupWithdrawalQueues,
 };
 
 

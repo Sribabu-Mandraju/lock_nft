@@ -105,7 +105,7 @@ if (ALCHEMY_WS_URL) {
 
   usdtContract.on("WithdrawalQueued", handleWithdrawalQueued("usdt"));
   usdcContract.on("WithdrawalQueued", handleWithdrawalQueued("usdc"));
-  usdtLockupContract.on("WithdrawalQueued", handleWithdrawalQueued("usdt-lockup"));
+  usdtLockupContract.on("WithdrawalQueued", handleWithdrawalQueued("usdt-nolockup"));
 
   // WithdrawalExecuted(uint256 indexed expiry, address indexed account, uint256 normalizedAmount)
   const handleWithdrawalExecuted = (marketPool) => async (
@@ -135,7 +135,7 @@ if (ALCHEMY_WS_URL) {
 
   usdtContract.on("WithdrawalExecuted", handleWithdrawalExecuted("usdt"));
   usdcContract.on("WithdrawalExecuted", handleWithdrawalExecuted("usdc"));
-  usdtLockupContract.on("WithdrawalExecuted", handleWithdrawalExecuted("usdt-lockup"));
+  usdtLockupContract.on("WithdrawalExecuted", handleWithdrawalExecuted("usdt-nolockup"));
 } else {
   console.warn("ALCHEMY_WS_URL not set; websocket listeners disabled.");
 }
