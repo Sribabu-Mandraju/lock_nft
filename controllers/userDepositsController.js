@@ -1,4 +1,5 @@
-import { ethers } from 'ethers';
+import ethersPkg from "ethers";
+const { ethers } = ethersPkg;
 import TimeLockNFTStaking_ABI from '../abis/LockTimeNFT_ABI.json' with { type: 'json' };
 import UserDeposits from '../models/userDepositsModel.js';
 
@@ -17,7 +18,9 @@ const safeToString = (value) => {
   return String(value);
 };
 
-const provider = new ethers.JsonRpcProvider('https://base-mainnet.g.alchemy.com/v2/lzIxPpJ8bHtK938K6Bnet');
+const provider = new ethers.providers.JsonRpcProvider(
+  "https://base-mainnet.g.alchemy.com/v2/lzIxPpJ8bHtK938K6Bnet"
+);
 const TimeLockNFTStaking_contractAddress = '0xC7Ac55fF5C832fDc8572C5F0C6E203BB329Af35B';
 
 const TimeLockNFTStaking_contract = new ethers.Contract(
@@ -304,7 +307,7 @@ export const getDepositsByUser = async (req, res) => {
     const { userAddress } = req.params;
     const { limit = 50, page = 1 } = req.query;
 
-    if (!userAddress || !ethers.isAddress(userAddress)) {
+    if (!userAddress || !ethers.utils.isAddress(userAddress)) {
       return res.status(400).json({
         success: false,
         error: 'Valid user address is required'

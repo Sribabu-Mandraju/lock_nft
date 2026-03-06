@@ -1,8 +1,9 @@
-import 'dotenv/config'
-import express from 'express'
-import cors from 'cors'
-import mongoose from 'mongoose'
-import { ethers } from 'ethers'
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import mongoose from "mongoose";
+import ethersPkg from "ethers";
+const { ethers } = ethersPkg;
 import LockNftRoutes from "./routes/LockNft.routes.js"
 import LockTimeNFTRoutes from "./routes/LockTimeNFTRoutes.js"
 import userDepositRoutes from "./routes/userDepositRoutes.js"
@@ -11,8 +12,8 @@ import QueueWithdrawalExpiry from "./models/QueueWithdrawalExpiry.js"
 import TimeLockNFTStaking_ABI from "./abis/Halal_Cash_ABI.json" with { type: "json" }
 import Halal_Pool_Routes from "./routes/Halal_Pool_Routes.js"
 
-const app = express()
-const PORT = 3000
+const app = express();
+const PORT = 3000;
 
 // MongoDB Connection
 const connectDB = async () => {
@@ -49,18 +50,30 @@ app.get("/",async (req,res) => {
 
 // --- Blockchain websocket listeners ---
 const ALCHEMY_WS_URL = "wss://eth-mainnet.g.alchemy.com/v2/geIrP8FKOhyxLglmOQLfF";
-// USDT pool
-const USDT_MARKET_ADDRESS = "0xBe8b1f70c5C20fe240CfA7e55B434545398279F3";
-// USDC pool
-const USDC_MARKET_ADDRESS = "0x7e496C5678b1722289d9c4A13C9aa53631Ca7607";
+// USDT pool (updated)
+const USDT_MARKET_ADDRESS = "0x02e0415e828a5f97309f93f001885b5db8a87d71";
+// USDC pool (updated)
+const USDC_MARKET_ADDRESS = "0x0886dc1d5db7288e2818a80c308de8eb2f13790c";
 // USDT-Lockup pool
 const USDT_LOCKUP_MARKET_ADDRESS = "0x8c06d86596d671798a67e80dc44a281c8d822fd3"; // TODO: Replace with actual contract address
 
 if (ALCHEMY_WS_URL) {
-  const wsProvider = new ethers.WebSocketProvider(ALCHEMY_WS_URL);
-  const usdtContract = new ethers.Contract(USDT_MARKET_ADDRESS, TimeLockNFTStaking_ABI, wsProvider);
-  const usdcContract = new ethers.Contract(USDC_MARKET_ADDRESS, TimeLockNFTStaking_ABI, wsProvider);
-  const usdtLockupContract = new ethers.Contract(USDT_LOCKUP_MARKET_ADDRESS, TimeLockNFTStaking_ABI, wsProvider);
+  const wsProvider = new ethers.providers.WebSocketProvider(ALCHEMY_WS_URL);
+  const usdtContract = new ethers.Contract(
+    USDT_MARKET_ADDRESS,
+    TimeLockNFTStaking_ABI,
+    wsProvider
+  );
+  const usdcContract = new ethers.Contract(
+    USDC_MARKET_ADDRESS,
+    TimeLockNFTStaking_ABI,
+    wsProvider
+  );
+  const usdtLockupContract = new ethers.Contract(
+    USDT_LOCKUP_MARKET_ADDRESS,
+    TimeLockNFTStaking_ABI,
+    wsProvider
+  );
 
   // Deposited(address user, uint256 tokenId, address depsoitToken, uint256 amount, uint8 months, uint256 depositedAt)
 // new changes 

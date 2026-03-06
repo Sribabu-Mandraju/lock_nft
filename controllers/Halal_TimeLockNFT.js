@@ -1,4 +1,5 @@
-import { ethers } from 'ethers';
+import ethersPkg from "ethers";
+const { ethers } = ethersPkg;
 import TimeLockNFTStaking_ABI from '../abis/Halal_Cash_ABI.json' with { type: 'json' };
 import ERC20_ABI from '../abis/ERC20_ABI.json' with { type: 'json' };
 import Deposit from '../models/Deposit.js';
@@ -11,7 +12,7 @@ const rpcUrls = [
 ];
 
 // Create providers for load balancing
-const providers = rpcUrls.map(url => new ethers.JsonRpcProvider(url));
+const providers = rpcUrls.map((url) => new ethers.providers.JsonRpcProvider(url));
 
 // Load balancer function to get a provider
 let currentProviderIndex = 0;
@@ -23,7 +24,7 @@ const getProvider = () => {
 
 // Create contracts for each provider
 const TimeLockNFTStaking_contractAddress = '0xf4b4ea96572B0B9411Ba15A81db6d1dEC4199671';
-const TimeLockNFTStaking_contracts = providers.map(provider => 
+const TimeLockNFTStaking_contracts = providers.map((provider) =>
   new ethers.Contract(
     TimeLockNFTStaking_contractAddress,
     TimeLockNFTStaking_ABI,
@@ -98,7 +99,11 @@ export const getStakingPublicData_Halal = async (req, res) => {
     // Optimized: Fetch token metadata and balances in parallel with load balancing
     const tokenDataPromises = allowedTokens.map(async (tokenAddress) => {
       const tokenProvider = getProvider();
-      const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, tokenProvider);
+      const tokenContract = new ethers.Contract(
+        tokenAddress,
+        ERC20_ABI,
+        tokenProvider
+      );
       
       try {
         const [name, decimals, balance, cap] = await Promise.all([
@@ -225,7 +230,11 @@ export const getStakingAdminData_Halal = async (req, res) => {
     // Optimized: Fetch token metadata and balances in parallel with load balancing
     const tokenDataPromises = allowedTokens.map(async (tokenAddress) => {
       const tokenProvider = getProvider();
-      const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, tokenProvider);
+      const tokenContract = new ethers.Contract(
+        tokenAddress,
+        ERC20_ABI,
+        tokenProvider
+      );
       
       try {
         const [name, decimals,currentBalance, balance, cap] = await Promise.all([
@@ -302,7 +311,7 @@ export const getUserDeposits_Halal = async (req, res) => {
     const userWalletAddress = req.query.userWalletAddress;
 
     // Validate userWalletAddress
-    if (!userWalletAddress || !ethers.isAddress(userWalletAddress)) {
+    if (!userWalletAddress || !ethers.utils.isAddress(userWalletAddress)) {
       return res.status(400).json({
         success: false,
         error: 'Valid user wallet address not provided',
@@ -397,7 +406,11 @@ export const getAllDeposits_Halal = async (req, res) => {
         meta = { name: 'Unknown', symbol: '', decimals: 18 };
         try {
           const tokenProvider = getProvider();
-          const tokenContract = new ethers.Contract(d.token, ERC20_ABI, tokenProvider);
+          const tokenContract = new ethers.Contract(
+            d.token,
+            ERC20_ABI,
+            tokenProvider
+          );
           const [name, symbol] = await Promise.all([
             tokenContract.name().catch(() => 'Unknown'),
             tokenContract.symbol().catch(() => ''),

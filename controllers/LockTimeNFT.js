@@ -1,9 +1,11 @@
-import { ethers } from 'ethers';
+import ethersPkg from "ethers";
+const { ethers } = ethersPkg;
 import TimeLockNFTStaking_ABI from '../abis/LockTimeNFT_ABI.json' with { type: 'json' };
 import ERC20_ABI from '../abis/ERC20_ABI.json' with { type: 'json' };
 
-
-const provider = new ethers.JsonRpcProvider('https://base-mainnet.g.alchemy.com/v2/lzIxPpJ8bHtK938K6Bnet');
+const provider = new ethers.providers.JsonRpcProvider(
+  "https://base-mainnet.g.alchemy.com/v2/lzIxPpJ8bHtK938K6Bnet"
+);
 const TimeLockNFTStaking_contractAddress = '0xC7Ac55fF5C832fDc8572C5F0C6E203BB329Af35B'; // Replace with your deployed contract address
 
 const TimeLockNFTStaking_contract = new ethers.Contract(
@@ -138,7 +140,7 @@ export const getStakingAdminData = async (req, res) => {
     }
 
     // Restrict access to admin (contract owner)
-    if (ethers.getAddress(userAddress) !== ethers.getAddress(owner)) {
+    if (ethers.utils.getAddress(userAddress) !== ethers.utils.getAddress(owner)) {
       return res.status(403).json({
         success: false,
         error: 'Access restricted to contract owner',
@@ -227,7 +229,7 @@ export const getUserDeposits = async (req, res) => {
     const userWalletAddress = req.query.userWalletAddress;
 
     // Validate userWalletAddress
-    if (!userWalletAddress || !ethers.isAddress(userWalletAddress)) {
+    if (!userWalletAddress || !ethers.utils.isAddress(userWalletAddress)) {
       return res.status(400).json({
         success: false,
         error: 'Valid user wallet address not provided',
@@ -247,7 +249,11 @@ export const getUserDeposits = async (req, res) => {
         // Get deposit details
         const deposit = await TimeLockNFTStaking_contract.getDeposit(tokenId);
         // Get token name from ERC20 contract
-        const tokenContract = new ethers.Contract(deposit.depositToken, ERC20_ABI, provider);
+        const tokenContract = new Contract(
+          deposit.depositToken,
+          ERC20_ABI,
+          provider
+        );
         const tokenName = await tokenContract.name();
 
         deposits.push({
