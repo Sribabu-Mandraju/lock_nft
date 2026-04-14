@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  getUserDepositsByPool,
   getWithdrawalQueuesByPool,
   getUsdtWithdrawalQueues,
   getUsdcWithdrawalQueues,
@@ -10,6 +11,7 @@ import {
 const router = express.Router();
 
 // Use query parameters only: ?pool=usdt|usdc|usdt-nolockup and optional ?account=0x...
+router.get("/user-deposits", getUserDepositsByPool);
 router.get("/queues", getWithdrawalQueuesByPool);
 router.get("/queues/usdt", getUsdtWithdrawalQueues);
 router.get("/queues/usdc", getUsdcWithdrawalQueues);

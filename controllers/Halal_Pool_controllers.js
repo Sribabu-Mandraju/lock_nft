@@ -1,4 +1,5 @@
 import QueueWithdrawalExpiry from "../models/QueueWithdrawalExpiry.js";
+import Deposit from "../models/Deposit.js";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import TimeLockNFTStaking_ABI from "../abis/Halal_Cash_ABI.json" with {
@@ -35,6 +36,62 @@ const MARKET_ADDRESS_TO_POOL = {
 };
 
 const iface = new ethers.utils.Interface(TimeLockNFTStaking_ABI);
+
+const DAYS_30_SECONDS = 30 * 24 * 60 * 60;
+
+export const getUserDepositsByPool = async (req, res) => {
+  try {
+    const account = req.query?.account;
+    if (!account || !ethers.utils.isAddress(account)) {
+      return res.status(400).json({
+        success: false,
+        error: "Valid account is required",
+      });
+    }
+
+    const docs = await Deposit.find({
+      user: new RegExp(`^${String(account).trim()}$`, "i"),
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const deposits = docs.map((deposit) => {
+      const depositedAtNum = Number(deposit.depositedAt || 0);
+      const periodMonthsNum = Number(deposit.periodMonths || 0);
+      const unlockTimestamp =
+        Number.isFinite(depositedAtNum) && Number.isFinite(periodMonthsNum)
+          ? String(depositedAtNum + periodMonthsNum * DAYS_30_SECONDS)
+          : "";
+
+      return {
+        tokenId: deposit.tokenId,
+        depositToken: deposit.token,
+        tokenName: deposit.token,
+        amount: deposit.amount,
+        startTimestamp: deposit.depositedAt,
+        periodMonths: String(deposit.periodMonths ?? ""),
+        unlockTimestamp,
+        originalMinter: deposit.user,
+        txHash: deposit.txHash,
+        blockNumber: deposit.blockNumber,
+        createdAt: deposit.createdAt,
+        updatedAt: deposit.updatedAt,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      deposits,
+      depositCount: deposits.length,
+    });
+  } catch (err) {
+    console.error("getUserDepositsByPool error:", err);
+    return res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+};
 
 export const getWithdrawalQueuesByPool = async (req, res) => {
   try {
@@ -201,6 +258,7 @@ export const recordWithdrawalTx = async (req, res) => {
 };
 
 export default {
+  getUserDepositsByPool,
   getWithdrawalQueuesByPool,
   getUsdtWithdrawalQueues,
   getUsdcWithdrawalQueues,
